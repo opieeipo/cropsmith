@@ -62,6 +62,16 @@ def _handle_errors(fn):
     return wrapper
 
 
+def _default_output(input_path, suffix: str = "", ext: str | None = None) -> str:
+    """Build a sensible output path next to the input when ``-o`` is omitted.
+
+    ``ext=None`` keeps the input's extension; otherwise it's replaced.
+    """
+    p = Path(input_path)
+    new_ext = p.suffix if ext is None else ext
+    return str(p.with_name(p.stem + suffix + new_ext))
+
+
 def _parse_box(box: str) -> tuple[int, int, int, int]:
     """Parse ``"x1,y1,x2,y2"`` into ``(x, y, width, height)``."""
     try:
@@ -113,7 +123,8 @@ def web_to_pdf(url, box, output):
 # --------------------------------------------------------------------------- #
 @main.command("shrink-pdf", aliases=["compress-pdf"])
 @click.argument("input_pdf", type=click.Path(exists=True, dir_okay=False))
-@click.option("--output", "-o", required=True, type=click.Path(dir_okay=False))
+@click.option("--output", "-o", default=None, type=click.Path(dir_okay=False),
+              help="Output path (default: <name>-min.pdf next to the input).")
 @click.option(
     "--level",
     type=click.Choice(["screen", "ebook", "printer", "prepress"]),
@@ -126,6 +137,7 @@ def shrink_pdf(input_pdf, output, level):
     """Reduce the file size of a PDF."""
     from .pdf_tools import compress_pdf
 
+    output = output or _default_output(input_pdf, "-min", ".pdf")
     compress_pdf(input_pdf, output, level)
     click.echo(f"Saved {output}")
 
@@ -135,12 +147,14 @@ def shrink_pdf(input_pdf, output, level):
 # --------------------------------------------------------------------------- #
 @main.command("merge-pdf", aliases=["combine", "merge"])
 @click.argument("inputs", nargs=-1, required=True, type=click.Path(exists=True, dir_okay=False))
-@click.option("--output", "-o", required=True, type=click.Path(dir_okay=False))
+@click.option("--output", "-o", default=None, type=click.Path(dir_okay=False),
+              help="Output path (default: merged.pdf next to the first input).")
 @_handle_errors
 def merge_pdf(inputs, output):
     """Combine multiple PDFs into a single file."""
     from .pdf_tools import combine_pdfs
 
+    output = output or str(Path(inputs[0]).with_name("merged.pdf"))
     combine_pdfs(list(inputs), output)
     click.echo(f"Merged {len(inputs)} files into {output}")
 
@@ -150,12 +164,14 @@ def merge_pdf(inputs, output):
 # --------------------------------------------------------------------------- #
 @main.command("pdf-to-word", aliases=["pdf2docx", "pdf-to-docx"])
 @click.argument("input_pdf", type=click.Path(exists=True, dir_okay=False))
-@click.option("--output", "-o", required=True, type=click.Path(dir_okay=False))
+@click.option("--output", "-o", default=None, type=click.Path(dir_okay=False),
+              help="Output path (default: <name>.docx next to the input).")
 @_handle_errors
 def pdf_to_word(input_pdf, output):
     """Convert a PDF into an editable Word (.docx) document."""
     from .pdf_tools import pdf_to_docx
 
+    output = output or _default_output(input_pdf, "", ".docx")
     pdf_to_docx(input_pdf, output)
     click.echo(f"Saved {output}")
 
@@ -165,7 +181,8 @@ def pdf_to_word(input_pdf, output):
 # --------------------------------------------------------------------------- #
 @main.command("shrink-video", aliases=["compress-video"])
 @click.argument("input_video", type=click.Path(exists=True, dir_okay=False))
-@click.option("--output", "-o", required=True, type=click.Path(dir_okay=False))
+@click.option("--output", "-o", default=None, type=click.Path(dir_okay=False),
+              help="Output path (default: <name>-compressed.<ext> next to the input).")
 @click.option(
     "--crf",
     type=click.IntRange(0, 51),
@@ -178,6 +195,7 @@ def shrink_video(input_video, output, crf):
     """Reduce the file size of a video."""
     from .video_tools import compress_video
 
+    output = output or _default_output(input_video, "-compressed", None)
     compress_video(input_video, output, crf)
     click.echo(f"Saved {output}")
 
@@ -187,12 +205,14 @@ def shrink_video(input_video, output, crf):
 # --------------------------------------------------------------------------- #
 @main.command("extract-text", aliases=["ocr"])
 @click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
-@click.option("--output", "-o", required=True, type=click.Path(dir_okay=False))
+@click.option("--output", "-o", default=None, type=click.Path(dir_okay=False),
+              help="Output path (default: <name>.txt next to the input).")
 @_handle_errors
 def extract_text(input_file, output):
     """Extract text from an image or scanned PDF."""
     from .ocr import run_ocr
 
+    output = output or _default_output(input_file, "", ".txt")
     text = run_ocr(input_file)
     Path(output).write_text(text, encoding="utf-8")
     click.echo(f"Saved {output}")

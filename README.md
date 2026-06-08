@@ -13,7 +13,7 @@ A cross-platform Swiss Army knife for document and media manipulation. Capture w
 - **PDF to Word** -- convert PDF files to editable Word (.docx) documents
 - **Video Compression** -- compress video files using configurable quality settings
 - **Text Extraction (OCR)** -- extract text from images or scanned PDFs
-- **Right-click integration** -- run the file tools straight from Finder's Quick Actions (macOS)
+- **Right-click integration** -- run the file tools straight from the file manager's right-click menu (macOS + Windows)
 
 ---
 
@@ -207,29 +207,33 @@ cropsmith extract-text scanned.pdf --output extracted.txt
 
 ---
 
-## Right-click menu (macOS)
+## Right-click menu (macOS & Windows)
 
-Add Cropsmith's file tools to Finder's right-click **Quick Actions**:
+Add Cropsmith's file tools to your file manager's right-click menu:
 
 ```bash
 cropsmith install-menu      # cropsmith uninstall-menu to remove
 ```
 
-Then right-click a file in Finder > Quick Actions:
+Then right-click a file:
 
 | File | Actions |
 |---|---|
-| PDF | Shrink PDF, PDF → Word, Extract Text, Merge PDFs (multi-select) |
+| PDF | Shrink PDF, PDF → Word, Extract Text, Merge PDFs* |
 | Image | Extract Text |
 | Video | Compress Video |
 
-Output is written next to the source (`foo-min.pdf`, `foo.docx`, `foo.txt`, `foo-compressed.mp4`),
-and a notification appears when done. Actions are scoped by file type, so PDF
-tools only show on PDFs.
+Output is written next to the source (`foo-min.pdf`, `foo.docx`, `foo.txt`,
+`foo-compressed.mp4`). Actions are scoped by file type, so PDF tools only show
+on PDFs.
 
-> Windows (Explorer) and Linux (Nautilus/Dolphin) menu integration are on the
-> [roadmap](docs/ROADMAP.md). The interactive tools (`web-to-pdf`, `capture-pages`)
-> stay CLI-only.
+- **macOS** -- Finder > Quick Actions. Shows a notification when done.
+- **Windows** -- right-click directly (Windows 10) or under "Show more options"
+  (Windows 11). Per-user, no admin. *Merge PDFs is macOS-only for now
+  (Windows multi-select needs a shell extension).
+- **Linux** -- on the [roadmap](docs/ROADMAP.md) (varies by desktop environment).
+
+> The interactive tools (`web-to-pdf`, `capture-pages`) stay CLI-only.
 
 ---
 

@@ -17,28 +17,32 @@ from .. import CropsmithError
 class MenuAction:
     """One right-click action: which verb to run and how to name the output."""
 
-    def __init__(self, key, title, verb, utis, multi=False, out_suffix="", out_ext=None):
-        self.key = key            # stable id (used for filenames)
+    def __init__(self, key, title, verb, utis, exts, multi=False, out_suffix="", out_ext=None):
+        self.key = key            # stable id (used for filenames / registry keys)
         self.title = title        # text shown in the menu
         self.verb = verb          # cropsmith subcommand
         self.utis = utis          # macOS uniform type identifiers to scope to
+        self.exts = exts          # Windows file extensions to scope to
         self.multi = multi        # operate on all selected files at once
         self.out_suffix = out_suffix
         self.out_ext = out_ext    # None -> keep the input extension
 
 
+_IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp"]
+_VIDEO_EXTS = [".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"]
+
 # UTIs: com.adobe.pdf (PDF), public.image (images), public.movie (video).
 ACTIONS = [
     MenuAction("shrink-pdf", "Cropsmith: Shrink PDF", "shrink-pdf",
-               ["com.adobe.pdf"], out_suffix="-min", out_ext=".pdf"),
+               ["com.adobe.pdf"], [".pdf"], out_suffix="-min", out_ext=".pdf"),
     MenuAction("pdf-to-word", "Cropsmith: PDF → Word", "pdf-to-word",
-               ["com.adobe.pdf"], out_ext=".docx"),
+               ["com.adobe.pdf"], [".pdf"], out_ext=".docx"),
     MenuAction("extract-text", "Cropsmith: Extract Text", "extract-text",
-               ["com.adobe.pdf", "public.image"], out_ext=".txt"),
+               ["com.adobe.pdf", "public.image"], [".pdf"] + _IMAGE_EXTS, out_ext=".txt"),
     MenuAction("shrink-video", "Cropsmith: Compress Video", "shrink-video",
-               ["public.movie"], out_suffix="-compressed"),
+               ["public.movie"], _VIDEO_EXTS, out_suffix="-compressed"),
     MenuAction("merge-pdf", "Cropsmith: Merge PDFs", "merge-pdf",
-               ["com.adobe.pdf"], multi=True),
+               ["com.adobe.pdf"], [".pdf"], multi=True),
 ]
 
 
@@ -61,22 +65,32 @@ def cropsmith_executable() -> str:
     return os.path.realpath(sys.argv[0])
 
 
-def install_menu(progress=None):
-    progress = progress or (lambda _m: None)
+def _platform_module():
     if sys.platform == "darwin":
         from . import macos
 
-        return macos.install(cropsmith_executable(), progress)
-    raise CropsmithError(
-        f"Right-click menu integration isn't implemented for '{sys.platform}' yet "
-        "(macOS only for now)."
-    )
+        return macos
+    if sys.platform.startswith("win"):
+        from . import windows
+
+        return windows
+    return None
+
+
+def install_menu(progress=None):
+    progress = progress or (lambda _m: None)
+    mod = _platform_module()
+    if mod is None:
+        raise CropsmithError(
+            f"Right-click menu integration isn't implemented for '{sys.platform}' yet "
+            "(macOS and Windows only for now)."
+        )
+    return mod.install(cropsmith_executable(), progress)
 
 
 def uninstall_menu(progress=None):
     progress = progress or (lambda _m: None)
-    if sys.platform == "darwin":
-        from . import macos
-
-        return macos.uninstall(progress)
-    raise CropsmithError(f"No menu integration to remove on '{sys.platform}'.")
+    mod = _platform_module()
+    if mod is None:
+        raise CropsmithError(f"No menu integration to remove on '{sys.platform}'.")
+    return mod.uninstall(progress)

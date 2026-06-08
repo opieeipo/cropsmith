@@ -21,13 +21,12 @@ menu. (`web-to-pdf` / `capture-pages` are interactive and stay CLI-first.)
 - Embeds the resolved absolute `cropsmith` path (GUI Services have no user PATH).
 - Posts a notification on completion. Per-user, no admin rights.
 
-### Next -- Windows / Linux
-
-### Windows -- Explorer context menu
-- Register `HKCU\Software\Classes\SystemFileAssociations\<.ext>\shell\Cropsmith.<cmd>`
-  keys pointing at the `cropsmith` shim, with `%1` for the selected file.
-- Per-user (HKCU), no admin. Submenu grouping via `SubCommands`/`MUIVerb`.
-- Windows 11 cascading menu nuance: classic context menu is simplest first.
+### Windows -- Explorer context menu -- DONE (pending real-Windows verification)
+- Registers `HKCU\Software\Classes\SystemFileAssociations\<.ext>\shell\Cropsmith.<cmd>`
+  keys with `%1` for the selected file. Per-user (HKCU), no admin.
+- Verbs auto-name their output (no `-o` needed), so each command is a single line.
+- TODO: merge-pdf (multi-select) needs a DropTarget/shell extension; Win11
+  top-level menu needs a packaged IExplorerCommand (currently legacy menu).
 
 ### Linux -- file-manager scripts / actions
 - GNOME Files (Nautilus): scripts in `~/.local/share/nautilus/scripts/` or a
