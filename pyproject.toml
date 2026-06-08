@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cropsmith"
+version = "0.1.0"
+description = "Swiss Army knife for document and media manipulation"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "playwright>=1.40",
+    "pypdf>=4.0",
+    "pdf2docx>=0.5.8",
+    "pytesseract>=0.3.10",
+    "Pillow>=10.0",
+    "PyMuPDF>=1.24",
+    "click>=8.1",
+]
+
+[project.scripts]
+cropsmith = "cropsmith.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["cropsmith*"]
