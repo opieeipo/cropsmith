@@ -2,11 +2,13 @@
 
 You open the page in your own browser/reader, then this tool:
 
-1. pops up a **settings dialog** (which key turns the page, how many pages, the
-   interval, the output file) with a **crosshair region picker**;
-2. counts down so you can focus your window;
-3. captures that screen region, auto-pressing the key to turn pages, and OCRs
-   the frames into one searchable PDF.
+1. shows a **crosshair region picker** (a translucent, click-through-feeling
+   overlay that sits on top of your screen) to trace the capture box;
+2. pops up a **settings dialog** (page-turn key, number of pages, interval,
+   output file);
+3. counts down so you can focus your window, then captures that region,
+   auto-pressing the key to turn pages, and OCRs the frames into one searchable
+   PDF.
 
 No browser is embedded -- it captures whatever is on your screen.
 """
@@ -39,24 +41,43 @@ def parse_box_logical(box: str) -> tuple[int, int, int, int]:
     return x, y, w, h
 
 
-# --------------------------------------------------------------------------- #
-# Crosshair region picker (a fullscreen overlay Toplevel)
-# --------------------------------------------------------------------------- #
-def _select_region_overlay(parent):
-    """Fullscreen crosshair picker. Returns ``((x, y, w, h), (sw, sh))`` or None."""
-    import tkinter as tk
-
-    top = tk.Toplevel(parent)
-    top.attributes("-fullscreen", True)
-    top.attributes("-alpha", 0.25)
-    top.attributes("-topmost", True)
+def _new_tk():
     try:
-        top.overrideredirect(True)
+        import tkinter as tk
+    except ImportError as exc:  # pragma: no cover
+        raise CropsmithError(
+            "The page-capture popup needs tkinter, which isn't in this Python build:\n"
+            "  macOS (Homebrew):  brew install python-tk@3.12\n"
+            "  Debian/Ubuntu:     sudo apt install python3-tk\n"
+            "  Fedora:            sudo dnf install python3-tkinter\n"
+            "Or pass --box/--key/--pages/... to run headless without the popup."
+        ) from exc
+    return tk
+
+
+# --------------------------------------------------------------------------- #
+# Crosshair region picker -- a borderless, screen-sized, in-place overlay.
+# Crucially NOT -fullscreen on macOS (that opens a separate Space and the
+# overlay leaves your browser behind).
+# --------------------------------------------------------------------------- #
+def select_region():
+    """Show the crosshair picker. Return ``((x, y, w, h), (sw, sh))`` or None."""
+    tk = _new_tk()
+
+    root = tk.Tk()
+    sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
+    try:
+        root.overrideredirect(True)
+    except tk.TclError:
+        pass
+    root.geometry(f"{sw}x{sh}+0+0")
+    root.attributes("-topmost", True)
+    try:
+        root.attributes("-alpha", 0.3)
     except tk.TclError:
         pass
 
-    sw, sh = top.winfo_screenwidth(), top.winfo_screenheight()
-    canvas = tk.Canvas(top, cursor="crosshair", bg="black", highlightthickness=0,
+    canvas = tk.Canvas(root, cursor="crosshair", bg="gray", highlightthickness=0,
                        width=sw, height=sh)
     canvas.pack(fill="both", expand=True)
     canvas.create_text(sw // 2, 30, fill="#00ff99", font=("Helvetica", 16, "bold"),
@@ -67,7 +88,6 @@ def _select_region_overlay(parent):
     guides = {"h": None, "v": None}
 
     def crosshair(event):
-        # Full-width / full-height guide lines that track the cursor.
         if guides["h"] is None:
             guides["h"] = canvas.create_line(0, event.y, sw, event.y, fill="#ff4400")
             guides["v"] = canvas.create_line(event.x, 0, event.x, sh, fill="#ff4400")
@@ -87,27 +107,26 @@ def _select_region_overlay(parent):
         if drag["rect"] is not None:
             canvas.coords(drag["rect"], drag["x"], drag["y"], event.x, event.y)
 
-    def on_release(event):
-        if drag["x"] is None:
-            return
-        left, top_ = min(drag["x"], event.x), min(drag["y"], event.y)
-        w, h = abs(event.x - drag["x"]), abs(event.y - drag["y"])
-        if w > 2 and h > 2:
-            state["box"] = (left, top_, w, h)
-        top.destroy()
+    def finish(event):
+        if drag["x"] is not None:
+            left, top = min(drag["x"], event.x), min(drag["y"], event.y)
+            w, h = abs(event.x - drag["x"]), abs(event.y - drag["y"])
+            if w > 2 and h > 2:
+                state["box"] = (left, top, w, h)
+        root.destroy()
 
     def cancel(_event=None):
         state["box"] = None
-        top.destroy()
+        root.destroy()
 
     canvas.bind("<Motion>", crosshair)
     canvas.bind("<Button-1>", on_press)
     canvas.bind("<B1-Motion>", on_drag)
-    canvas.bind("<ButtonRelease-1>", on_release)
-    top.bind("<Escape>", cancel)
-    top.grab_set()
-    canvas.focus_set()
-    parent.wait_window(top)
+    canvas.bind("<ButtonRelease-1>", finish)
+    root.bind_all("<Escape>", cancel)
+    root.lift()
+    root.focus_force()
+    root.mainloop()
 
     if state["box"] is None:
         return None
@@ -115,52 +134,37 @@ def _select_region_overlay(parent):
 
 
 # --------------------------------------------------------------------------- #
-# Settings dialog
+# Settings dialog (a normal window)
 # --------------------------------------------------------------------------- #
 def run_capture_gui(defaults: dict):
-    """Show the settings popup (with crosshair picker). Return a settings dict or None."""
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-    except ImportError as exc:  # pragma: no cover
-        raise CropsmithError(
-            "The page-capture popup needs tkinter, which isn't in this Python build:\n"
-            "  macOS (Homebrew):  brew install python-tk@3.12\n"
-            "  Debian/Ubuntu:     sudo apt install python3-tk\n"
-            "  Fedora:            sudo dnf install python3-tkinter\n"
-            "Or pass --box/--key/--pages/... to run headless without the popup."
-        ) from exc
+    """Pick the region, then collect settings. Return a settings dict or None."""
+    selection = select_region()
+    if selection is None:
+        return None
+    region, logical_size = selection
+    settings = _settings_dialog(defaults, region)
+    if settings is None:
+        return None
+    settings["region"] = region
+    settings["logical_size"] = logical_size
+    return settings
+
+
+def _settings_dialog(defaults, region):
+    tk = _new_tk()
+    from tkinter import filedialog
 
     result = {"settings": None}
-    region = {"box": None, "logical_size": None}
-
     root = tk.Tk()
     root.title("Cropsmith — Page Capture")
     root.attributes("-topmost", True)
     root.resizable(False, False)
     pad = {"padx": 8, "pady": 4}
 
-    tk.Label(root, text="Open your page in a browser, set the options, then Start.\n"
-                        "You'll have a few seconds to focus your window.",
+    x, y, w, h = region
+    tk.Label(root, text=f"Region: {w}×{h} at ({x}, {y}).  Set the options, then Start.\n"
+                        "You'll have a few seconds to focus your reader window.",
              justify="left").grid(row=0, column=0, columnspan=3, sticky="w", **pad)
-
-    region_lbl = tk.Label(root, text="No region selected", fg="#b00")
-    def pick_region():
-        root.withdraw()
-        root.update()
-        sel = _select_region_overlay(root)
-        root.deiconify()
-        if sel:
-            region["box"], region["logical_size"] = sel
-            x, y, w, h = sel[0]
-            region_lbl.config(text=f"Region: {w}×{h} at ({x}, {y})", fg="#070")
-    tk.Button(root, text="🎯  Select capture region", command=pick_region).grid(
-        row=1, column=0, sticky="w", **pad)
-    region_lbl.grid(row=1, column=1, columnspan=2, sticky="w", **pad)
-
-    def add_field(r, label, var):
-        tk.Label(root, text=label).grid(row=r, column=0, sticky="w", **pad)
-        tk.Entry(root, textvariable=var, width=14).grid(row=r, column=1, sticky="w", **pad)
 
     key_var = tk.StringVar(value=str(defaults.get("key", "right")))
     pages_var = tk.StringVar(value=str(defaults.get("pages", 10)))
@@ -169,33 +173,33 @@ def run_capture_gui(defaults: dict):
     ocr_var = tk.BooleanVar(value=bool(defaults.get("ocr", True)))
     out_var = tk.StringVar(value=str(defaults.get("output", "")))
 
-    add_field(2, "Key that turns the page:", key_var)
-    add_field(3, "Number of pages:", pages_var)
-    add_field(4, "Seconds between pages:", interval_var)
-    add_field(5, "Seconds to get ready:", delay_var)
-    tk.Checkbutton(root, text="Searchable PDF (OCR each page)", variable=ocr_var).grid(
-        row=6, column=0, columnspan=2, sticky="w", **pad)
+    def field(r, label, var):
+        tk.Label(root, text=label).grid(row=r, column=0, sticky="w", **pad)
+        tk.Entry(root, textvariable=var, width=14).grid(row=r, column=1, sticky="w", **pad)
 
-    tk.Label(root, text="Output PDF:").grid(row=7, column=0, sticky="w", **pad)
-    tk.Entry(root, textvariable=out_var, width=28).grid(row=7, column=1, sticky="w", **pad)
+    field(1, "Key that turns the page:", key_var)
+    field(2, "Number of pages:", pages_var)
+    field(3, "Seconds between pages:", interval_var)
+    field(4, "Seconds to get ready:", delay_var)
+    tk.Checkbutton(root, text="Searchable PDF (OCR each page)", variable=ocr_var).grid(
+        row=5, column=0, columnspan=2, sticky="w", **pad)
+
+    tk.Label(root, text="Output PDF:").grid(row=6, column=0, sticky="w", **pad)
+    tk.Entry(root, textvariable=out_var, width=28).grid(row=6, column=1, sticky="w", **pad)
+
     def browse():
         path = filedialog.asksaveasfilename(defaultextension=".pdf",
                                             filetypes=[("PDF", "*.pdf")])
         if path:
             out_var.set(path)
-    tk.Button(root, text="Browse…", command=browse).grid(row=7, column=2, sticky="w", **pad)
+    tk.Button(root, text="Browse…", command=browse).grid(row=6, column=2, sticky="w", **pad)
 
     status = tk.Label(root, text="", fg="#b00")
-    status.grid(row=8, column=0, columnspan=3, sticky="w", **pad)
+    status.grid(row=7, column=0, columnspan=3, sticky="w", **pad)
 
     def start():
-        if region["box"] is None:
-            status.config(text="Please select a capture region first.")
-            return
         try:
-            settings = {
-                "region": region["box"],
-                "logical_size": region["logical_size"],
+            s = {
                 "key": key_var.get().strip() or "right",
                 "pages": int(pages_var.get()),
                 "interval": float(interval_var.get()),
@@ -206,19 +210,20 @@ def run_capture_gui(defaults: dict):
         except ValueError:
             status.config(text="Pages must be a whole number; interval/delay must be numbers.")
             return
-        if settings["pages"] < 1:
+        if s["pages"] < 1:
             status.config(text="Number of pages must be at least 1.")
             return
-        if not settings["output"]:
+        if not s["output"]:
             status.config(text="Choose an output PDF file.")
             return
-        result["settings"] = settings
+        result["settings"] = s
         root.destroy()
 
     tk.Button(root, text="Start Capture", command=start, default="active").grid(
-        row=9, column=1, sticky="e", **pad)
-    tk.Button(root, text="Cancel", command=root.destroy).grid(row=9, column=2, sticky="w", **pad)
-
+        row=8, column=1, sticky="e", **pad)
+    tk.Button(root, text="Cancel", command=root.destroy).grid(row=8, column=2, sticky="w", **pad)
+    root.lift()
+    root.focus_force()
     root.mainloop()
     return result["settings"]
 
