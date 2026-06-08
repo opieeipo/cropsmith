@@ -4,7 +4,8 @@
 - Friendly CLI: `web-to-pdf`, `shrink-pdf`, `merge-pdf`, `pdf-to-word`, `shrink-video`, `extract-text`
 - Interactive `capture-pages` (draw a box, auto page-turn, OCR to searchable PDF)
 - CI + release pipeline (build + publish to PyPI on tag via trusted publishing)
-- Scoop manifest (working); Homebrew formula (see notes)
+- Distribution: standalone apps (PyInstaller) + pip/pipx. (Scoop/Homebrew
+  dropped -- brew can't build opencv from source, and pip is required anyway.)
 
 ## Next: right-click context-menu integration
 
@@ -42,5 +43,5 @@ the right entries per platform:
 ## Later
 - Config file for default output naming / quality presets
 - Drag-and-drop GUI wrapper
-- Homebrew: revisit once heavy deps (opencv via pdf2docx, PyMuPDF) can be
-  slimmed; `pipx` is the recommended macOS/Linux install until then.
+- Slim the standalone bundle further (opencv is the biggest un-earned weight;
+  investigate OCR without opencv)

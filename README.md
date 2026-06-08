@@ -72,10 +72,10 @@ integration are on the [roadmap](docs/ROADMAP.md).
 ### For developers (pipx / pip)
 
 ```bash
-pipx install cropsmith          # once published to PyPI
+pipx install cropsmith          # once published to PyPI; works on macOS/Linux/Windows
 ```
 
-Or run the standalone manifests in [`packaging/`](packaging/) (Scoop on Windows).
+See [`packaging/`](packaging/) for details.
 
 ---
 
@@ -296,10 +296,9 @@ cropsmith --help
 
 | Platform | Status | Notes |
 |---|---|---|
-| macOS | Full support | Use Homebrew for system deps |
-| Linux | Full support | Use apt/dnf for system deps |
-| Windows (native) | Partial | ffmpeg, Tesseract and Ghostscript paths may need manual config |
-| Windows (WSL2) | Full support | Recommended for Windows users |
+| macOS | Full support | No system deps -- everything is bundled |
+| Linux | Full support | No system deps -- everything is bundled |
+| Windows | Full support | No system deps -- everything is bundled |
 
 ---
 
