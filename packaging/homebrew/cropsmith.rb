@@ -3,8 +3,8 @@ class Cropsmith < Formula
 
   desc "Cross-platform Swiss Army knife for document and media manipulation"
   homepage "https://github.com/opieeipo/cropsmith"
-  url "https://github.com/opieeipo/cropsmith/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "4443927d60ea22de3593f495be0bec0a11a668899197a259b01d75f5c21239fb"
+  url "https://github.com/opieeipo/cropsmith/archive/refs/tags/v0.2.0.tar.gz"
+  sha256 "561c14ff556126645160a1b81542dacef5b5e6b2d3363a3cd3fd6ce9e3fb8727"
   license "MIT"
 
   depends_on "python@3.12"

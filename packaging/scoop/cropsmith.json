@@ -1,5 +1,5 @@
 {
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Cross-platform Swiss Army knife for document and media manipulation",
     "homepage": "https://github.com/opieeipo/cropsmith",
     "license": "MIT",
@@ -11,9 +11,9 @@
         "tesseract": "tesseract",
         "ghostscript": "ghostscript"
     },
-    "url": "https://github.com/opieeipo/cropsmith/archive/refs/tags/v0.1.0.zip",
-    "hash": "cc2a382d47a700bed8c6c919911f9fa12dde1e52aac7f93d2249396e171bfeb6",
-    "extract_dir": "cropsmith-0.1.0",
+    "url": "https://github.com/opieeipo/cropsmith/archive/refs/tags/v0.2.0.zip",
+    "hash": "dfb0358bd6c644203f8df84cdeaeda546d16dfc841400a2ab29d36c10e70d9ee",
+    "extract_dir": "cropsmith-0.2.0",
     "installer": {
         "script": [
             "Write-Host 'Building isolated environment for cropsmith...'",
