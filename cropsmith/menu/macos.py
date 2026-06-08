@@ -23,20 +23,34 @@ def _sh_quote(value: str) -> str:
     return "'" + value.replace("'", "'\\''") + "'"
 
 
+_LOG_HEADER = (
+    "#!/bin/bash\n"
+    f"CROPSMITH={{cropsmith}}\n"
+    'LOG="${{HOME:-/tmp}}/cropsmith-menu.log"\n'
+    'exec >>"$LOG" 2>&1\n'
+    "echo \"===== $(date '+%F %T') | {title} =====\"\n"
+    'echo "exe: $CROPSMITH"\n'
+    'echo "exe runnable: $([ -x "$CROPSMITH" ] && echo yes || echo NO)"\n'
+    'echo "args: $*"\n'
+)
+
+
 def _script(action, exe: str) -> str:
     cropsmith = _sh_quote(exe)
     title = action.title.replace('"', '\\"')
+    header = _LOG_HEADER.format(cropsmith=cropsmith, title=title)
 
     if action.multi:
         return (
-            "#!/bin/bash\n"
-            f"CROPSMITH={cropsmith}\n"
-            '[ "$#" -eq 0 ] && exit 0\n'
+            header
+            + '[ "$#" -eq 0 ] && exit 0\n'
             'dir=$(dirname "$1")\n'
             'if "$CROPSMITH" merge-pdf "$@" -o "$dir/merged.pdf"; then\n'
+            '  echo "OK -> $dir/merged.pdf"\n'
             f'  osascript -e \'display notification "Merged into merged.pdf" with title "Cropsmith" subtitle "{title}"\'\n'
             "else\n"
-            f'  osascript -e \'display notification "Merge failed" with title "Cropsmith" subtitle "{title}"\'\n'
+            '  echo "FAIL($?) merge"\n'
+            f'  osascript -e \'display notification "Merge failed (see ~/cropsmith-menu.log)" with title "Cropsmith" subtitle "{title}"\'\n'
             "fi\n"
         )
 
@@ -46,17 +60,18 @@ def _script(action, exe: str) -> str:
         out_line = f'out="${{f%.*}}{action.out_suffix}.${{f##*.}}"'
 
     return (
-        "#!/bin/bash\n"
-        f"CROPSMITH={cropsmith}\n"
-        "ok=0; fail=0\n"
+        header
+        + "ok=0; fail=0\n"
         'for f in "$@"; do\n'
         f"  {out_line}\n"
-        f'  if "$CROPSMITH" {action.verb} "$f" -o "$out"; then ok=$((ok+1)); else fail=$((fail+1)); fi\n'
+        f'  if "$CROPSMITH" {action.verb} "$f" -o "$out"; then ok=$((ok+1)); echo "OK -> $out";'
+        ' else rc=$?; fail=$((fail+1)); echo "FAIL($rc) on $f"; fi\n'
         "done\n"
+        'echo "summary ok=$ok fail=$fail"\n'
         'if [ "$fail" -eq 0 ]; then\n'
         f'  osascript -e "display notification \\"$ok file(s) processed\\" with title \\"Cropsmith\\" subtitle \\"{title}\\""\n'
         "else\n"
-        f'  osascript -e "display notification \\"$ok ok, $fail failed\\" with title \\"Cropsmith\\" subtitle \\"{title}\\""\n'
+        f'  osascript -e "display notification \\"$ok ok, $fail failed (see ~/cropsmith-menu.log)\\" with title \\"Cropsmith\\" subtitle \\"{title}\\""\n'
         "fi\n"
     )
 
