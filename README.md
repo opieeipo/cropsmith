@@ -49,6 +49,29 @@ Cropsmith uses plain-language command names. Older/alternative names still work 
 
 ## Installation
 
+### Quick install (package managers)
+
+**Scoop (Windows):**
+
+```powershell
+scoop install https://raw.githubusercontent.com/opieeipo/cropsmith/main/packaging/scoop/cropsmith.json
+```
+
+**Homebrew (macOS / Linux):** see [`packaging/README.md`](packaging/README.md) for the tap workflow.
+
+Optional helper tools used by some commands:
+
+```bash
+# macOS
+brew install ffmpeg tesseract ghostscript
+# Windows
+scoop install ffmpeg tesseract ghostscript
+```
+
+---
+
+### From source
+
 ### 1. Clone the repo
 
 ```bash

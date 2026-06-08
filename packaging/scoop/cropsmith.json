@@ -1,0 +1,48 @@
+{
+    "version": "0.1.0",
+    "description": "Cross-platform Swiss Army knife for document and media manipulation",
+    "homepage": "https://github.com/opieeipo/cropsmith",
+    "license": "MIT",
+    "depends": [
+        "python"
+    ],
+    "suggest": {
+        "ffmpeg": "ffmpeg",
+        "tesseract": "tesseract",
+        "ghostscript": "ghostscript"
+    },
+    "url": "https://github.com/opieeipo/cropsmith/archive/refs/tags/v0.1.0.zip",
+    "hash": "cc2a382d47a700bed8c6c919911f9fa12dde1e52aac7f93d2249396e171bfeb6",
+    "extract_dir": "cropsmith-0.1.0",
+    "installer": {
+        "script": [
+            "Write-Host 'Building isolated environment for cropsmith...'",
+            "python -m venv \"$dir\\.venv\"",
+            "& \"$dir\\.venv\\Scripts\\python.exe\" -m pip install --upgrade pip --quiet",
+            "& \"$dir\\.venv\\Scripts\\python.exe\" -m pip install --quiet \"$dir\"",
+            "Write-Host 'Installing the Chromium browser used by web-to-pdf...'",
+            "& \"$dir\\.venv\\Scripts\\python.exe\" -m playwright install chromium"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (Test-Path \"$dir\\.venv\") { Remove-Item -Recurse -Force \"$dir\\.venv\" }"
+        ]
+    },
+    "bin": [
+        [
+            ".venv\\Scripts\\cropsmith.exe",
+            "cropsmith"
+        ]
+    ],
+    "notes": [
+        "Some commands rely on extra tools. Install them with Scoop:",
+        "  scoop install ffmpeg tesseract ghostscript",
+        "(ffmpeg/tesseract/ghostscript are in the 'main' bucket.)"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/opieeipo/cropsmith/archive/refs/tags/v$version.zip",
+        "extract_dir": "cropsmith-$version"
+    }
+}
