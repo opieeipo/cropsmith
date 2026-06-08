@@ -219,18 +219,20 @@ Then right-click a file:
 
 | File | Actions |
 |---|---|
-| PDF | Shrink PDF, PDF → Word, Extract Text, Merge PDFs* |
+| PDF | Shrink PDF, PDF → Word, Extract Text |
 | Image | Extract Text |
 | Video | Compress Video |
+| Folder | Merge PDFs (every PDF in the folder → `merged.pdf`) |
 
 Output is written next to the source (`foo-min.pdf`, `foo.docx`, `foo.txt`,
 `foo-compressed.mp4`). Actions are scoped by file type, so PDF tools only show
 on PDFs.
 
-- **macOS** -- Finder > Quick Actions. Shows a notification when done.
-- **Windows** -- right-click directly (Windows 10) or under "Show more options"
-  (Windows 11). Per-user, no admin. *Merge PDFs is macOS-only for now
-  (Windows multi-select needs a shell extension).
+- **macOS** -- Finder > Quick Actions. Shows a notification when done. (Merge:
+  select multiple PDFs.)
+- **Windows** -- right-click a file directly (Windows 10) or under "Show more
+  options" (Windows 11). Per-user, no admin. (Merge: right-click a folder, or
+  inside it, to merge every PDF in that folder.)
 - **Linux** -- on the [roadmap](docs/ROADMAP.md) (varies by desktop environment).
 
 > The interactive tools (`web-to-pdf`, `capture-pages`) stay CLI-only.

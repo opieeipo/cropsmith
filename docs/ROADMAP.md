@@ -25,8 +25,11 @@ menu. (`web-to-pdf` / `capture-pages` are interactive and stay CLI-first.)
 - Registers `HKCU\Software\Classes\SystemFileAssociations\<.ext>\shell\Cropsmith.<cmd>`
   keys with `%1` for the selected file. Per-user (HKCU), no admin.
 - Verbs auto-name their output (no `-o` needed), so each command is a single line.
-- TODO: merge-pdf (multi-select) needs a DropTarget/shell extension; Win11
-  top-level menu needs a packaged IExplorerCommand (currently legacy menu).
+- merge-pdf is a **folder** action here (right-click a folder / its background ->
+  merge every PDF inside), matching the original mergePDF.py; sidesteps the
+  per-file multi-select limitation.
+- TODO: Win11 top-level menu needs a packaged IExplorerCommand (currently legacy
+  "Show more options" menu).
 
 ### Linux -- file-manager scripts / actions
 - GNOME Files (Nautilus): scripts in `~/.local/share/nautilus/scripts/` or a

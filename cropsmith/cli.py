@@ -146,17 +146,33 @@ def shrink_pdf(input_pdf, output, level):
 # Combine PDFs
 # --------------------------------------------------------------------------- #
 @main.command("merge-pdf", aliases=["combine", "merge"])
-@click.argument("inputs", nargs=-1, required=True, type=click.Path(exists=True, dir_okay=False))
+@click.argument("inputs", nargs=-1, required=True, type=click.Path(exists=True))
 @click.option("--output", "-o", default=None, type=click.Path(dir_okay=False),
-              help="Output path (default: merged.pdf next to the first input).")
+              help="Output path (default: merged.pdf in/next to the input).")
 @_handle_errors
 def merge_pdf(inputs, output):
-    """Combine multiple PDFs into a single file."""
+    """Combine PDFs into one.
+
+    Pass several PDF files, or a single folder to merge every PDF inside it
+    (sorted by name).
+    """
     from .pdf_tools import combine_pdfs
 
-    output = output or str(Path(inputs[0]).with_name("merged.pdf"))
-    combine_pdfs(list(inputs), output)
-    click.echo(f"Merged {len(inputs)} files into {output}")
+    inputs = list(inputs)
+    if len(inputs) == 1 and Path(inputs[0]).is_dir():
+        folder = Path(inputs[0])
+        output = output or str(folder / "merged.pdf")
+        out_name = Path(output).name
+        found = sorted({p for pat in ("*.pdf", "*.PDF") for p in folder.glob(pat)})
+        files = [str(p) for p in found if p.name != out_name]  # don't fold in a prior merge
+        if not files:
+            raise click.ClickException(f"No PDF files to merge in {folder}")
+    else:
+        files = inputs
+        output = output or str(Path(files[0]).with_name("merged.pdf"))
+
+    combine_pdfs(files, output)
+    click.echo(f"Merged {len(files)} file(s) into {output}")
 
 
 # --------------------------------------------------------------------------- #
