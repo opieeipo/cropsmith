@@ -199,5 +199,61 @@ def extract_text(input_file, output, lang):
     click.echo(f"Saved {output}")
 
 
+# --------------------------------------------------------------------------- #
+# Interactive screen-region page capture
+# --------------------------------------------------------------------------- #
+@main.command("capture-pages", aliases=["scan", "page-turner"])
+@click.option("--output", "-o", required=True, type=click.Path(dir_okay=False))
+@click.option("--box", default=None, help="x,y,w,h in logical screen pixels (skips the visual selector).")
+@click.option("--key", default=None, help="Key that turns the page (e.g. right, space, pagedown).")
+@click.option("--pages", type=int, default=None, help="How many pages to capture.")
+@click.option("--interval", type=float, default=None, help="Seconds between page turns.")
+@click.option(
+    "--startup-delay", type=float, default=3.0, show_default=True,
+    help="Seconds to focus your reader window before capture begins.",
+)
+@click.option("--lang", default="eng", show_default=True, help="Tesseract language code for OCR.")
+@click.option("--ocr/--no-ocr", default=True, show_default=True, help="OCR each page into a searchable PDF.")
+@_handle_errors
+def capture_pages_cmd(output, box, key, pages, interval, startup_delay, lang, ocr):
+    """Capture a screen region across several pages into one (searchable) PDF.
+
+    Draw a box over your reader, choose which key turns the page and how often,
+    and Cropsmith captures each page and stitches them into a PDF.
+    """
+    from .screen_capture import capture_pages, parse_box_logical, select_region
+
+    if box:
+        region = parse_box_logical(box)
+        logical_size = None
+    else:
+        click.echo("Drag a box around the area to capture (Esc to cancel)...")
+        selection = select_region()
+        if selection is None:
+            raise click.ClickException("No region selected.")
+        region, logical_size = selection
+        click.echo(f"Region: x={region[0]} y={region[1]} w={region[2]} h={region[3]}")
+
+    # Prompt for anything not supplied as a flag -- this is the interactive part.
+    if key is None:
+        key = click.prompt("Which key turns the page?", default="right")
+    if pages is None:
+        pages = click.prompt("How many pages?", default=10, type=int)
+    if interval is None:
+        interval = click.prompt("Seconds between page turns?", default=1.5, type=float)
+
+    click.echo(
+        f"\nFocus your reader window now. Capturing {pages} page(s), "
+        f"pressing '{key}' every {interval}s.\n"
+    )
+    capture_pages(
+        region, logical_size, output,
+        key=key, pages=pages, interval=interval,
+        startup_delay=startup_delay, lang=lang, ocr=ocr,
+        progress=lambda msg: click.echo(msg),
+    )
+    click.echo(f"Saved {output}")
+
+
 if __name__ == "__main__":
     main()

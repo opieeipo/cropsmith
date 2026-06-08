@@ -2,10 +2,46 @@
 
 Distribution manifests for installing `cropsmith` as a system-wide command.
 
-| File | Platform | Status |
+| Method | Platform | Status |
 |---|---|---|
+| PyPI + `pipx` | all | **Recommended** -- single command, no clone |
 | `scoop/cropsmith.json` | Windows (Scoop) | Ready to use |
-| `homebrew/cropsmith.rb` | macOS / Linux (Homebrew) | Needs Python resources generated (one command, see below) |
+| `homebrew/cropsmith.rb` | macOS / Linux (Homebrew) | Best-effort -- heavy deps make a pure formula impractical; prefer `pipx` |
+
+---
+
+## PyPI / pipx (recommended, any platform)
+
+Once published to PyPI:
+
+```bash
+pipx install cropsmith        # isolated, on PATH, no venv juggling
+# or
+pip install cropsmith
+```
+
+### Publishing (automated via GitHub Actions)
+
+`.github/workflows/release.yml` builds and publishes to PyPI on any `v*` tag,
+using **trusted publishing** (OIDC) -- no API token is stored in the repo.
+
+One-time setup on PyPI (https://pypi.org/manage/account/publishing/), add a
+*pending publisher*:
+
+| Field | Value |
+|---|---|
+| PyPI project name | `cropsmith` |
+| Owner | `opieeipo` |
+| Repository name | `cropsmith` |
+| Workflow name | `release.yml` |
+| Environment name | `pypi` |
+
+Then cut a release:
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0     # CI builds, publishes to PyPI, attaches artifacts
+```
 
 ---
 

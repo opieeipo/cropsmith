@@ -7,6 +7,7 @@ A cross-platform Swiss Army knife for document and media manipulation. Capture w
 ## Features
 
 - **Web Capture** -- screenshot a web page within a user-defined bounding box and export as PDF
+- **Page Capture** -- interactively draw a box over any reader, auto-turn pages, and OCR them into a searchable PDF
 - **PDF Compression** -- reduce PDF file size while preserving quality
 - **PDF Combine** -- merge multiple PDFs into a single file
 - **PDF to Word** -- convert PDF files to editable Word (.docx) documents
@@ -22,6 +23,7 @@ Cropsmith uses plain-language command names. Older/alternative names still work 
 | Command | Aliases | What it does |
 |---|---|---|
 | `web-to-pdf` | `capture` | Save a web page region as a PDF |
+| `capture-pages` | `scan`, `page-turner` | Capture a screen region across pages into a (searchable) PDF |
 | `shrink-pdf` | `compress-pdf` | Compress a PDF |
 | `merge-pdf` | `combine`, `merge` | Combine PDFs into one |
 | `pdf-to-word` | `pdf2docx`, `pdf-to-docx` | Convert a PDF to Word (.docx) |
@@ -50,6 +52,12 @@ Cropsmith uses plain-language command names. Older/alternative names still work 
 ## Installation
 
 ### Quick install (package managers)
+
+**pipx (recommended, any platform)** -- once published to PyPI:
+
+```bash
+pipx install cropsmith
+```
 
 **Scoop (Windows):**
 
@@ -124,6 +132,29 @@ cropsmith web-to-pdf --url "https://example.com" --box 100,200,800,600 --output 
 ```
 
 `--box` format is `x1,y1,x2,y2` in pixels relative to the rendered page.
+
+---
+
+### Capture pages from your screen (interactive)
+
+Draw a box over any on-screen reader (browser, Kindle, PDF viewer), then Cropsmith
+captures each page -- auto-pressing a key to turn pages -- and OCRs them into one
+searchable PDF.
+
+```bash
+cropsmith capture-pages --output book.pdf
+```
+
+It will let you drag a selection box, then prompt for which key turns the page,
+how many pages, and the interval. Or pass everything up front:
+
+```bash
+cropsmith capture-pages -o book.pdf --box 200,150,900,1200 --key right --pages 40 --interval 1.2
+```
+
+The selection overlay is dismissed before capture begins, so it never appears in
+the output. On macOS, grant your terminal **Screen Recording** and **Accessibility**
+permissions (System Settings > Privacy & Security) the first time.
 
 ---
 
@@ -232,6 +263,8 @@ dependencies = [
     "Pillow",
     "PyMuPDF",
     "click",
+    "mss",
+    "pynput",
 ]
 
 [project.scripts]
