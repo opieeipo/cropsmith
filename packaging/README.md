@@ -73,6 +73,15 @@ scoop install ffmpeg tesseract ghostscript
 
 ## Homebrew (macOS / Linux)
 
+> **Status: blocked.** Homebrew builds from source, so every Python dependency
+> needs a source distribution. `pdf2docx` depends on `opencv-python-headless`,
+> which ships **wheels only** -- `brew update-python-resources` fails with
+> *"opencv-python-headless exists on PyPI but lacks a suitable source
+> distribution."* **Use `pipx install cropsmith` on macOS/Linux instead.**
+>
+> A working formula would require moving `pdf2docx` into an optional extra so the
+> base install is opencv-free. The steps below are kept for that future path.
+
 Homebrew builds in a network-free sandbox, so every Python dependency must be
 listed in the formula as a `resource`. Generate those once:
 

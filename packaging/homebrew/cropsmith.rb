@@ -12,15 +12,23 @@ class Cropsmith < Formula
   depends_on "ghostscript"
   depends_on "tesseract"
 
-  # Python dependencies are vendored as `resource` blocks so the build is
-  # network-free (a Homebrew requirement). Generate / refresh them with:
+  # NOTE: This formula is NOT currently installable as-is.
   #
-  #   brew update-python-resources Formula/cropsmith.rb
+  # Homebrew builds from source, so every Python dependency must be vendored as
+  # a `resource` (sdist). `pdf2docx` pulls in `opencv-python-headless`, which
+  # publishes wheels ONLY -- no source distribution -- so it cannot be vendored:
   #
-  # That command reads pyproject.toml and writes one `resource` stanza per
-  # transitive dependency (click, playwright, pypdf, pdf2docx, pytesseract,
-  # Pillow, PyMuPDF, ...). Until it has been run at least once, `brew install`
-  # from this formula will fail to resolve dependencies. See packaging/README.md.
+  #   $ brew update-python-resources Formula/cropsmith.rb
+  #   Error: opencv-python-headless exists on PyPI but lacks a suitable
+  #          source distribution
+  #
+  # Recommended install path on macOS/Linux is pipx (see packaging/README.md):
+  #
+  #   pipx install cropsmith
+  #
+  # To make a real Homebrew formula viable, move `pdf2docx` (the opencv source)
+  # into an optional extra so the base install is opencv-free, then run
+  # `brew update-python-resources` to populate the stanzas below.
   #
   # <<< resources go here >>>
 
