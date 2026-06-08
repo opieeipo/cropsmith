@@ -188,13 +188,12 @@ def shrink_video(input_video, output, crf):
 @main.command("extract-text", aliases=["ocr"])
 @click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", "-o", required=True, type=click.Path(dir_okay=False))
-@click.option("--lang", default="eng", show_default=True, help="Tesseract language code.")
 @_handle_errors
-def extract_text(input_file, output, lang):
+def extract_text(input_file, output):
     """Extract text from an image or scanned PDF."""
     from .ocr import run_ocr
 
-    text = run_ocr(input_file, lang=lang)
+    text = run_ocr(input_file)
     Path(output).write_text(text, encoding="utf-8")
     click.echo(f"Saved {output}")
 
@@ -212,10 +211,9 @@ def extract_text(input_file, output, lang):
     "--startup-delay", type=float, default=3.0, show_default=True,
     help="Seconds to focus your reader window before capture begins.",
 )
-@click.option("--lang", default="eng", show_default=True, help="Tesseract language code for OCR.")
 @click.option("--ocr/--no-ocr", default=True, show_default=True, help="OCR each page into a searchable PDF.")
 @_handle_errors
-def capture_pages_cmd(output, box, key, pages, interval, startup_delay, lang, ocr):
+def capture_pages_cmd(output, box, key, pages, interval, startup_delay, ocr):
     """Capture a screen region across several pages into one (searchable) PDF.
 
     Draw a box over your reader, choose which key turns the page and how often,
@@ -249,7 +247,7 @@ def capture_pages_cmd(output, box, key, pages, interval, startup_delay, lang, oc
     capture_pages(
         region, logical_size, output,
         key=key, pages=pages, interval=interval,
-        startup_delay=startup_delay, lang=lang, ocr=ocr,
+        startup_delay=startup_delay, ocr=ocr,
         progress=lambda msg: click.echo(msg),
     )
     click.echo(f"Saved {output}")

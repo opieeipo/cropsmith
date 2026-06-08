@@ -54,3 +54,46 @@ jobs:
         with:
           files: dist/*
           generate_release_notes: true
+
+  # Self-contained, no-Python apps for each OS, attached to the release.
+  standalone:
+    needs: build
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            label: macos
+          - os: windows-latest
+            label: windows
+          - os: ubuntu-latest
+            label: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install (with opencv dedupe to keep the bundle small)
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip pyinstaller
+          pip install .
+          # rapidocr pulls full opencv-python; pdf2docx needs only cv2 -> keep headless
+          pip uninstall -y opencv-python || true
+          pip install --force-reinstall --no-deps opencv-python-headless
+      - name: Build standalone
+        shell: bash
+        run: |
+          cd packaging/pyinstaller
+          pyinstaller cropsmith.spec --noconfirm --distpath ./dist --workpath ./build
+      - name: Package
+        shell: bash
+        run: |
+          cd packaging/pyinstaller/dist
+          7z a -tzip "Cropsmith-${{ matrix.label }}.zip" cropsmith >/dev/null
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: packaging/pyinstaller/dist/Cropsmith-${{ matrix.label }}.zip

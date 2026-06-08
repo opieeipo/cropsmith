@@ -38,43 +38,44 @@ Cropsmith uses plain-language command names. Older/alternative names still work 
 - pip (comes with Python)
 - Platform: macOS, Linux, or Windows (WSL recommended on Windows for full feature parity)
 
-### System dependencies (installed separately)
+### System dependencies
 
-| Dependency | Purpose | Install |
-|---|---|---|
-| `ffmpeg` | Video compression | `brew install ffmpeg` / `apt install ffmpeg` |
-| `tesseract` | OCR engine | `brew install tesseract` / `apt install tesseract-ocr` |
-| `ghostscript` | PDF compression | `brew install ghostscript` / `apt install ghostscript` |
-| `playwright` (Chromium) | Web capture | Installed automatically via setup |
+**None.** Cropsmith is self-contained -- OCR, PDF compression and video
+compression all run from bundled Python wheels (RapidOCR, PyMuPDF, and an ffmpeg
+binary shipped inside `imageio-ffmpeg`). No `ffmpeg`, `tesseract` or
+`ghostscript` install required.
+
+The only exception is `web-to-pdf`, which downloads a Chromium browser once via
+`playwright install chromium` the first time you use it.
 
 ---
 
 ## Installation
 
-### Quick install (package managers)
+### Download the app (no setup)
 
-**pipx (recommended, any platform)** -- once published to PyPI:
+The easiest way -- no Python, no terminal, nothing to install. Grab the build for
+your OS from the [latest release](https://github.com/opieeipo/cropsmith/releases/latest):
+
+| OS | Download |
+|---|---|
+| macOS | `Cropsmith-macos.zip` -- unzip and run |
+| Windows | `Cropsmith-windows.zip` -- unzip and run |
+| Linux | `Cropsmith-linux.zip` -- unzip and run |
+
+These bundles include everything (Python runtime + all engines). Nothing else to
+install. Polished installers (`.dmg` / `.exe` / `.AppImage`) and right-click menu
+integration are on the [roadmap](docs/ROADMAP.md).
+
+---
+
+### For developers (pipx / pip)
 
 ```bash
-pipx install cropsmith
+pipx install cropsmith          # once published to PyPI
 ```
 
-**Scoop (Windows):**
-
-```powershell
-scoop install https://raw.githubusercontent.com/opieeipo/cropsmith/main/packaging/scoop/cropsmith.json
-```
-
-**Homebrew (macOS / Linux):** see [`packaging/README.md`](packaging/README.md) for the tap workflow.
-
-Optional helper tools used by some commands:
-
-```bash
-# macOS
-brew install ffmpeg tesseract ghostscript
-# Windows
-scoop install ffmpeg tesseract ghostscript
-```
+Or run the standalone manifests in [`packaging/`](packaging/) (Scoop on Windows).
 
 ---
 
@@ -200,7 +201,7 @@ Extract text from an image or scanned PDF:
 
 ```bash
 cropsmith extract-text input.png --output extracted.txt
-cropsmith extract-text scanned.pdf --output extracted.txt --lang eng
+cropsmith extract-text scanned.pdf --output extracted.txt
 ```
 
 ---
@@ -259,7 +260,8 @@ dependencies = [
     "playwright",
     "pypdf",
     "pdf2docx",
-    "pytesseract",
+    "rapidocr-onnxruntime",
+    "imageio-ffmpeg",
     "Pillow",
     "PyMuPDF",
     "click",

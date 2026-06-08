@@ -1,46 +1,87 @@
-"""PDF utilities: compress (Ghostscript), combine (pypdf), convert to DOCX."""
+"""PDF utilities: compress (PyMuPDF), combine (pypdf), convert to DOCX.
+
+Compression uses PyMuPDF (bundled wheel) -- no Ghostscript install required.
+"""
 
 from __future__ import annotations
 
-import shutil
-import subprocess
 from pathlib import Path
 
 from . import CropsmithError
 
-
-def _find_ghostscript() -> str | None:
-    for name in ("gs", "gswin64c", "gswin32c"):
-        path = shutil.which(name)
-        if path:
-            return path
-    return None
+# Quality presets map to the max DPI we allow embedded images to keep. Images
+# above the target are downsampled; everything else is losslessly re-deflated.
+_LEVEL_DPI = {
+    "screen": 72,
+    "ebook": 150,
+    "printer": 300,
+    "prepress": 0,  # 0 = no image downsampling, lossless optimise only
+}
 
 
 def compress_pdf(input_pdf, output, level: str = "screen") -> Path:
-    """Compress ``input_pdf`` into ``output`` using a Ghostscript quality preset."""
-    gs = _find_ghostscript()
-    if gs is None:
-        raise CropsmithError(
-            "Ghostscript ('gs') not found. Install with: "
-            "brew install ghostscript  /  apt install ghostscript"
-        )
+    """Shrink ``input_pdf`` into ``output``.
 
-    cmd = [
-        gs,
-        "-sDEVICE=pdfwrite",
-        "-dCompatibilityLevel=1.4",
-        f"-dPDFSETTINGS=/{level}",
-        "-dNOPAUSE",
-        "-dQUIET",
-        "-dBATCH",
-        f"-sOutputFile={output}",
-        str(input_pdf),
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise CropsmithError(f"Ghostscript failed:\n{result.stderr.strip()}")
+    Always applies lossless optimisation (deflate streams/fonts/images, garbage
+    collect, clean). For ``screen``/``ebook``/``printer`` it additionally
+    downsamples embedded images whose resolution exceeds the preset target.
+    """
+    import fitz
+
+    target_dpi = _LEVEL_DPI.get(level, 72)
+    doc = fitz.open(str(input_pdf))
+    try:
+        if target_dpi:
+            _downsample_images(doc, target_dpi)
+        doc.save(
+            str(output),
+            garbage=4,
+            deflate=True,
+            deflate_images=True,
+            deflate_fonts=True,
+            clean=True,
+        )
+    finally:
+        doc.close()
     return Path(output)
+
+
+def _downsample_images(doc, target_dpi: int) -> None:
+    """Re-encode images that are larger than ``target_dpi`` would need.
+
+    Best-effort: any image we cannot safely rewrite is left untouched.
+    """
+    import fitz
+
+    for page in doc:
+        for info in page.get_images(full=True):
+            xref = info[0]
+            try:
+                rects = page.get_image_rects(xref)
+            except Exception:  # noqa: BLE001
+                continue
+            if not rects:
+                continue
+            display_in = max(rects[0].width, rects[0].height) / 72.0  # points -> inches
+            if display_in <= 0:
+                continue
+            try:
+                pix = fitz.Pixmap(doc, xref)
+            except Exception:  # noqa: BLE001
+                continue
+            current_dpi = max(pix.width, pix.height) / display_in
+            if current_dpi <= target_dpi * 1.1:
+                continue
+            scale = target_dpi / current_dpi
+            new_w = max(1, int(pix.width * scale))
+            new_h = max(1, int(pix.height * scale))
+            try:
+                if pix.alpha:  # drop alpha for JPEG
+                    pix = fitz.Pixmap(pix, 0)
+                shrunk = fitz.Pixmap(pix, new_w, new_h) if hasattr(fitz, "Pixmap") else pix
+                page.replace_image(xref, pixmap=shrunk)
+            except Exception:  # noqa: BLE001
+                continue
 
 
 def combine_pdfs(inputs, output) -> Path:

@@ -151,7 +151,6 @@ def capture_pages(
     pages: int = 10,
     interval: float = 1.5,
     startup_delay: float = 3.0,
-    lang: str = "eng",
     ocr: bool = True,
     progress=None,
 ) -> Path:
@@ -166,25 +165,7 @@ def capture_pages(
         raise CropsmithError("mss is not installed. Run: pip install mss") from exc
     from PIL import Image
 
-    pytesseract = None
-    if ocr:
-        try:
-            import pytesseract as _pt
-        except ImportError as exc:
-            raise CropsmithError("pytesseract is not installed. Run: pip install pytesseract") from exc
-        import shutil
-
-        if shutil.which(_pt.pytesseract.tesseract_cmd) is None and shutil.which("tesseract") is None:
-            raise CropsmithError(
-                "Tesseract OCR engine not found. Install: brew install tesseract / apt install tesseract-ocr"
-            )
-        pytesseract = _pt
-
-    try:
-        controller = _build_controller()
-    except CropsmithError:
-        raise
-
+    controller = _build_controller()
     output = Path(output)
     pages = max(1, int(pages))
 
@@ -210,33 +191,26 @@ def capture_pages(
             time.sleep(1)
 
         key_obj = _resolve_key(key)
-        pdf_writer = None
-        images = []
-        if ocr:
-            from pypdf import PdfWriter
+        frames = []
 
-            pdf_writer = PdfWriter()
-
+        # Capture fast; OCR afterwards so page-turn timing stays accurate.
         for index in range(pages):
             shot = sct.grab(grab)
-            frame = Image.frombytes("RGB", shot.size, shot.rgb)
-            if ocr:
-                pdf_bytes = pytesseract.image_to_pdf_or_hocr(frame, extension="pdf", lang=lang)
-                pdf_writer.append(BytesIO(pdf_bytes))
-            else:
-                images.append(frame)
+            frames.append(Image.frombytes("RGB", shot.size, shot.rgb))
             if progress:
                 progress(f"Captured page {index + 1}/{pages}")
             if index < pages - 1:
                 _press(controller, key_obj)
                 time.sleep(interval)
 
-        if ocr:
-            with open(output, "wb") as fh:
-                pdf_writer.write(fh)
-            pdf_writer.close()
-        else:
-            images[0].save(output, "PDF", save_all=True, append_images=images[1:])
+    if ocr:
+        if progress:
+            progress("Running OCR and building searchable PDF...")
+        from .ocr import searchable_pdf_from_images
+
+        output.write_bytes(searchable_pdf_from_images(frames))
+    else:
+        frames[0].save(output, "PDF", save_all=True, append_images=frames[1:])
 
     return output
 
