@@ -61,18 +61,22 @@ def _new_tk():
 # overlay leaves your browser behind).
 # --------------------------------------------------------------------------- #
 def select_region():
-    """Show the crosshair picker. Return ``((x, y, w, h), (sw, sh))`` or None."""
+    """Show the crosshair picker. Return ``((x, y, w, h), (sw, sh))`` or None.
+
+    Uses a normal (managed) translucent window covering the screen -- NOT
+    ``-fullscreen`` (which on macOS Tk 9 enters a native fullscreen Space and
+    crashes) and NOT ``overrideredirect`` (borderless windows fail to come to
+    the front on macOS, so nothing appears).
+    """
     tk = _new_tk()
 
     root = tk.Tk()
     sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
-    try:
-        root.overrideredirect(True)
-    except tk.TclError:
-        pass
+    root.title("Cropsmith — drag a box around the capture area  (Esc to cancel)")
     root.geometry(f"{sw}x{sh}+0+0")
     root.attributes("-topmost", True)
     try:
+        root.wait_visibility(root)
         root.attributes("-alpha", 0.3)
     except tk.TclError:
         pass
@@ -124,8 +128,14 @@ def select_region():
     canvas.bind("<B1-Motion>", on_drag)
     canvas.bind("<ButtonRelease-1>", finish)
     root.bind_all("<Escape>", cancel)
-    root.lift()
-    root.focus_force()
+
+    # Force it to the front once the event loop is running (CLI-launched windows
+    # often open behind the terminal on macOS otherwise).
+    def _raise():
+        root.lift()
+        root.attributes("-topmost", True)
+        root.focus_force()
+    root.after(50, _raise)
     root.mainloop()
 
     if state["box"] is None:
@@ -222,8 +232,12 @@ def _settings_dialog(defaults, region):
     tk.Button(root, text="Start Capture", command=start, default="active").grid(
         row=8, column=1, sticky="e", **pad)
     tk.Button(root, text="Cancel", command=root.destroy).grid(row=8, column=2, sticky="w", **pad)
-    root.lift()
-    root.focus_force()
+
+    def _raise():
+        root.lift()
+        root.attributes("-topmost", True)
+        root.focus_force()
+    root.after(50, _raise)
     root.mainloop()
     return result["settings"]
 
