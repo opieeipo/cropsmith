@@ -104,7 +104,7 @@ def web_to_pdf(url, box, output):
     from .capture import capture_region
 
     region = _parse_box(box)
-    capture_region(url, region, output)
+    capture_region(url, region, output, progress=lambda msg: click.echo(msg))
     click.echo(f"Saved {output}")
 
 
