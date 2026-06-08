@@ -7,20 +7,21 @@
 - Distribution: standalone apps (PyInstaller) + pip/pipx. (Scoop/Homebrew
   dropped -- brew can't build opencv from source, and pip is required anyway.)
 
-## Next: right-click context-menu integration
+## Right-click context-menu integration
 
 Goal: invoke the **file-based** tools (`shrink-pdf`, `merge-pdf`, `pdf-to-word`,
 `shrink-video`, `extract-text`) directly from the OS file manager's right-click
 menu. (`web-to-pdf` / `capture-pages` are interactive and stay CLI-first.)
 
-The plan is an `cropsmith install-menu` / `uninstall-menu` command that registers
-the right entries per platform:
+`cropsmith install-menu` / `uninstall-menu` registers the entries per platform.
 
-### macOS -- Finder Quick Actions (Services)
-- Generate `*.workflow` Automator service bundles into `~/Library/Services/`,
-  each running `cropsmith <command>` on the selected file(s).
-- Show up under right-click > Quick Actions. Scoped by file type (PDF, video).
-- No admin rights needed; per-user install.
+### macOS -- Finder Quick Actions (Services) -- DONE
+- Generates `*.workflow` Automator service bundles into `~/Library/Services/`,
+  each running `cropsmith <command>` on the selected file(s), scoped by file type.
+- Embeds the resolved absolute `cropsmith` path (GUI Services have no user PATH).
+- Posts a notification on completion. Per-user, no admin rights.
+
+### Next -- Windows / Linux
 
 ### Windows -- Explorer context menu
 - Register `HKCU\Software\Classes\SystemFileAssociations\<.ext>\shell\Cropsmith.<cmd>`

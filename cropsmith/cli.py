@@ -253,5 +253,31 @@ def capture_pages_cmd(output, box, key, pages, interval, startup_delay, ocr):
     click.echo(f"Saved {output}")
 
 
+# --------------------------------------------------------------------------- #
+# Right-click menu integration
+# --------------------------------------------------------------------------- #
+@main.command("install-menu")
+@_handle_errors
+def install_menu_cmd():
+    """Add Cropsmith's file tools to the file manager's right-click menu."""
+    from .menu import install_menu
+
+    titles = install_menu(progress=lambda msg: click.echo(msg))
+    click.echo(
+        f"\nInstalled {len(titles)} right-click action(s). In Finder, right-click "
+        "a PDF / image / video > Quick Actions."
+    )
+
+
+@main.command("uninstall-menu")
+@_handle_errors
+def uninstall_menu_cmd():
+    """Remove Cropsmith's right-click menu actions."""
+    from .menu import uninstall_menu
+
+    titles = uninstall_menu(progress=lambda msg: click.echo(msg))
+    click.echo(f"\nRemoved {len(titles)} action(s).")
+
+
 if __name__ == "__main__":
     main()

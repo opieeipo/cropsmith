@@ -13,6 +13,7 @@ A cross-platform Swiss Army knife for document and media manipulation. Capture w
 - **PDF to Word** -- convert PDF files to editable Word (.docx) documents
 - **Video Compression** -- compress video files using configurable quality settings
 - **Text Extraction (OCR)** -- extract text from images or scanned PDFs
+- **Right-click integration** -- run the file tools straight from Finder's Quick Actions (macOS)
 
 ---
 
@@ -203,6 +204,32 @@ Extract text from an image or scanned PDF:
 cropsmith extract-text input.png --output extracted.txt
 cropsmith extract-text scanned.pdf --output extracted.txt
 ```
+
+---
+
+## Right-click menu (macOS)
+
+Add Cropsmith's file tools to Finder's right-click **Quick Actions**:
+
+```bash
+cropsmith install-menu      # cropsmith uninstall-menu to remove
+```
+
+Then right-click a file in Finder > Quick Actions:
+
+| File | Actions |
+|---|---|
+| PDF | Shrink PDF, PDF → Word, Extract Text, Merge PDFs (multi-select) |
+| Image | Extract Text |
+| Video | Compress Video |
+
+Output is written next to the source (`foo-min.pdf`, `foo.docx`, `foo.txt`, `foo-compressed.mp4`),
+and a notification appears when done. Actions are scoped by file type, so PDF
+tools only show on PDFs.
+
+> Windows (Explorer) and Linux (Nautilus/Dolphin) menu integration are on the
+> [roadmap](docs/ROADMAP.md). The interactive tools (`web-to-pdf`, `capture-pages`)
+> stay CLI-only.
 
 ---
 
