@@ -39,8 +39,10 @@ for pkg in ("onnxruntime",):
 
 # Lazily-imported packages: list as hidden imports so PyInstaller pulls them in
 # via their built-in hooks (which de-dupe/strip correctly -- don't collect_all
-# these or you get a second, unstripped copy).
-hiddenimports += ["cv2", "pynput", "mss", "PIL", "numpy"]
+# these or you get a second, unstripped copy). tkinter is imported lazily by the
+# capture popup, so it must be named here to be bundled (its hook adds Tcl/Tk).
+hiddenimports += ["cv2", "pynput", "mss", "PIL", "numpy",
+                  "tkinter", "tkinter.filedialog"]
 
 block_cipher = None
 

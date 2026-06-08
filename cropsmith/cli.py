@@ -72,50 +72,10 @@ def _default_output(input_path, suffix: str = "", ext: str | None = None) -> str
     return str(p.with_name(p.stem + suffix + new_ext))
 
 
-def _parse_box(box: str) -> tuple[int, int, int, int]:
-    """Parse ``"x1,y1,x2,y2"`` into ``(x, y, width, height)``."""
-    try:
-        x1, y1, x2, y2 = (int(part.strip()) for part in box.split(","))
-    except ValueError as exc:
-        raise click.BadParameter(
-            "must be four integers in the form 'x1,y1,x2,y2'", param_hint="--box"
-        ) from exc
-    x, y = min(x1, x2), min(y1, y2)
-    width, height = abs(x2 - x1), abs(y2 - y1)
-    if width == 0 or height == 0:
-        raise click.BadParameter("region has zero width or height", param_hint="--box")
-    return x, y, width, height
-
-
 @click.group(cls=AliasedGroup)
 @click.version_option(__version__, prog_name="cropsmith")
 def main():
     """Cropsmith -- a friendly Swiss Army knife for documents and media."""
-
-
-# --------------------------------------------------------------------------- #
-# Web capture
-# --------------------------------------------------------------------------- #
-@main.command("web-to-pdf", aliases=["capture"])
-@click.option("--url", required=True, help="Web page to capture.")
-@click.option(
-    "--box",
-    required=True,
-    help="Region to capture as 'x1,y1,x2,y2' in page pixels.",
-)
-@click.option(
-    "--output", "-o", required=True,
-    type=click.Path(dir_okay=False),
-    help="Output PDF path.",
-)
-@_handle_errors
-def web_to_pdf(url, box, output):
-    """Save a region of a web page as a PDF."""
-    from .capture import capture_region
-
-    region = _parse_box(box)
-    capture_region(url, region, output, progress=lambda msg: click.echo(msg))
-    click.echo(f"Saved {output}")
 
 
 # --------------------------------------------------------------------------- #
@@ -237,56 +197,59 @@ def extract_text(input_file, output):
 # --------------------------------------------------------------------------- #
 # Interactive screen-region page capture
 # --------------------------------------------------------------------------- #
-@main.command("capture-pages", aliases=["scan", "page-turner"])
-@click.option("--output", "-o", required=True, type=click.Path(dir_okay=False))
-@click.option("--box", default=None, help="x,y,w,h in logical screen pixels (skips the visual selector).")
+@main.command("capture-pages", aliases=["web-to-pdf", "scan", "page-turner"])
+@click.option("--output", "-o", default=None, type=click.Path(dir_okay=False),
+              help="Output PDF (the popup will ask if omitted).")
+@click.option("--box", default=None,
+              help="x,y,w,h in logical screen pixels. If given, skips the popup (headless).")
 @click.option("--key", default=None, help="Key that turns the page (e.g. right, space, pagedown).")
 @click.option("--pages", type=int, default=None, help="How many pages to capture.")
 @click.option("--interval", type=float, default=None, help="Seconds between page turns.")
-@click.option(
-    "--startup-delay", type=float, default=3.0, show_default=True,
-    help="Seconds to focus your reader window before capture begins.",
-)
+@click.option("--startup-delay", type=float, default=3.0, show_default=True,
+              help="Seconds to focus your window before capture begins.")
 @click.option("--ocr/--no-ocr", default=True, show_default=True, help="OCR each page into a searchable PDF.")
 @_handle_errors
 def capture_pages_cmd(output, box, key, pages, interval, startup_delay, ocr):
-    """Capture a screen region across several pages into one (searchable) PDF.
+    """Capture an on-screen reader across pages into one (searchable) PDF.
 
-    Draw a box over your reader, choose which key turns the page and how often,
-    and Cropsmith captures each page and stitches them into a PDF.
+    With no arguments this opens a popup: a crosshair to pick the region, plus
+    fields for the page-turn key, number of pages, interval and output. Pass
+    --box to skip the popup and run headless (for scripting).
     """
-    from .screen_capture import capture_pages, parse_box_logical, select_region
+    from .screen_capture import capture_pages, parse_box_logical, run_capture_gui
 
     if box:
-        region = parse_box_logical(box)
-        logical_size = None
-    else:
-        click.echo("Drag a box around the area to capture (Esc to cancel)...")
-        selection = select_region()
-        if selection is None:
-            raise click.ClickException("No region selected.")
-        region, logical_size = selection
-        click.echo(f"Region: x={region[0]} y={region[1]} w={region[2]} h={region[3]}")
+        # Headless / scripted mode -- everything from flags.
+        if not output:
+            raise click.ClickException("--output is required when --box is used.")
+        capture_pages(
+            parse_box_logical(box), None, output,
+            key=key or "right", pages=pages or 10,
+            interval=interval if interval is not None else 1.5,
+            startup_delay=startup_delay, ocr=ocr,
+            progress=lambda msg: click.echo(msg),
+        )
+        click.echo(f"Saved {output}")
+        return
 
-    # Prompt for anything not supplied as a flag -- this is the interactive part.
-    if key is None:
-        key = click.prompt("Which key turns the page?", default="right")
-    if pages is None:
-        pages = click.prompt("How many pages?", default=10, type=int)
-    if interval is None:
-        interval = click.prompt("Seconds between page turns?", default=1.5, type=float)
-
-    click.echo(
-        f"\nFocus your reader window now. Capturing {pages} page(s), "
-        f"pressing '{key}' every {interval}s.\n"
-    )
+    # Interactive: popup with crosshair picker + settings.
+    settings = run_capture_gui(defaults={
+        "key": key or "right",
+        "pages": pages or 10,
+        "interval": interval if interval is not None else 1.5,
+        "startup_delay": startup_delay,
+        "ocr": ocr,
+        "output": output or "",
+    })
+    if settings is None:
+        raise click.ClickException("Capture cancelled.")
     capture_pages(
-        region, logical_size, output,
-        key=key, pages=pages, interval=interval,
-        startup_delay=startup_delay, ocr=ocr,
+        settings["region"], settings["logical_size"], settings["output"],
+        key=settings["key"], pages=settings["pages"], interval=settings["interval"],
+        startup_delay=settings["startup_delay"], ocr=settings["ocr"],
         progress=lambda msg: click.echo(msg),
     )
-    click.echo(f"Saved {output}")
+    click.echo(f"Saved {settings['output']}")
 
 
 # --------------------------------------------------------------------------- #

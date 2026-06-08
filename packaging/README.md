@@ -21,8 +21,9 @@ pipx install cropsmith        # isolated, on PATH, no venv juggling
 pip install cropsmith
 ```
 
-Installs ~560 MB of runtime wheels. `web-to-pdf` additionally downloads a
-Chromium browser (~90 MB) the first time it runs, into a shared user cache.
+Installs ~430 MB of runtime wheels. No browser, no system tools. (The Page
+Capture popup needs `tkinter`, bundled with most Python builds; Homebrew/minimal
+Linux need `python-tk` / `python3-tk`.)
 
 ### Publishing (automated via GitHub Actions)
 

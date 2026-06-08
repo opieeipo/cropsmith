@@ -27,8 +27,8 @@ jobs:
       - name: Smoke-test CLI
         run: |
           cropsmith --help
-          cropsmith web-to-pdf --help
           cropsmith capture-pages --help
+          cropsmith shrink-pdf --help
 
   build:
     runs-on: ubuntu-latest

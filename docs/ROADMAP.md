@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Now (shipping in 0.2.0)
-- Friendly CLI: `web-to-pdf`, `shrink-pdf`, `merge-pdf`, `pdf-to-word`, `shrink-video`, `extract-text`
+- Friendly CLI: `capture-pages`, `shrink-pdf`, `merge-pdf`, `pdf-to-word`, `shrink-video`, `extract-text`
 - Interactive `capture-pages` (draw a box, auto page-turn, OCR to searchable PDF)
 - CI + release pipeline (build + publish to PyPI on tag via trusted publishing)
 - Distribution: standalone apps (PyInstaller) + pip/pipx. (Scoop/Homebrew
@@ -11,7 +11,7 @@
 
 Goal: invoke the **file-based** tools (`shrink-pdf`, `merge-pdf`, `pdf-to-word`,
 `shrink-video`, `extract-text`) directly from the OS file manager's right-click
-menu. (`web-to-pdf` / `capture-pages` are interactive and stay CLI-first.)
+menu. (`capture-pages` is an interactive popup and stays CLI-launched.)
 
 `cropsmith install-menu` / `uninstall-menu` registers the entries per platform.
 

@@ -4,16 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cropsmith"
-version = "0.3.0"
+version = "0.4.0"
 description = "Self-contained Swiss Army knife for document and media manipulation"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-# Fully self-contained: no system ffmpeg / tesseract / ghostscript required.
-# OCR -> rapidocr-onnxruntime, video -> imageio-ffmpeg (bundled binary),
-# PDF compression -> PyMuPDF.
+# Fully self-contained: no system ffmpeg / tesseract / ghostscript, and no
+# embedded browser. OCR -> rapidocr-onnxruntime, video -> imageio-ffmpeg
+# (bundled binary), PDF compression -> PyMuPDF, screen capture -> mss + pynput.
 dependencies = [
-    "playwright>=1.40",
     "pypdf>=4.0",
     "pdf2docx>=0.5.8",
     "rapidocr-onnxruntime>=1.3",
